@@ -1,0 +1,36 @@
+username: admin
+password: pranav
+insecure: true
+
+targets:
+  r1:
+    address: 10.0.100.9:6030
+  r2:
+    address: 10.0.100.6:6030
+  r3:
+    address: 10.0.100.4:6030
+  r4:
+    address: 10.0.100.8:6030
+  s1:
+    address: 10.0.100.7:6030
+  s2:
+    address: 10.0.100.2:6030
+  s3:
+    address: 10.0.100.5:6030
+  s4:
+    address: 10.0.100.5:6030
+subscriptions:
+  interface_status:
+    paths:
+      - interfaces/interface/state/oper-status
+    sample-interval: 20s
+      #  cpu_usage:
+      #paths:
+      # - components/component/cpu
+      # sample-interval: 20s
+
+outputs:
+  grpcfile:
+    type: file
+    filename: /home/student/lab1/streamdataint.log
+

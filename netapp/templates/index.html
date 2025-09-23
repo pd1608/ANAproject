@@ -131,18 +131,20 @@
                 <label>Hostname:</label>
                 <input type="text" name="hostname" placeholder="e.g. router1" required>
 
+                <!-- Dummy Vendor Dropdown -->
+                <label>Vendor:</label>
+                <select name="vendor">
+                    <option value="">Select Vendor</option>
+                    <option value="cisco">Cisco</option>
+                    <option value="arista">Arista</option>
+                </select>
+
                 <label>Template:</label>
                 <select name="j2_template" id="j2_template" onchange="updateForm()" required>
                     {% for value, label in templates %}
                         <option value="{{ value }}">{{ label }}</option>
                     {% endfor %}
                 </select>
-
-                <label>Management IP:</label>
-                <input type="text" name="management_ip" placeholder="e.g. 192.168.100.10" required>
-
-                <label>Management Subnet Mask:</label>
-                <input type="text" name="management_mask" placeholder="e.g. 255.255.255.0" required>
 
                 <h3>Interfaces</h3>
                 <div id="interfaces_container"></div>
@@ -229,11 +231,9 @@
             const html = `
             <div class="sub-section" id="interface_${index}">
                 <label>Interface Name:</label>
-                <input type="text" name="interface_name_${index}" placeholder="e.g. GigabitEthernet0/0" required>
+                <input type="text" name="interface_name_${index}" placeholder="e.g. eth1" required>
                 <label>IP Address:</label>
-                <input type="text" name="interface_ip_${index}" placeholder="e.g. 192.168.1.1" required>
-                <label>Subnet Mask:</label>
-                <input type="text" name="interface_mask_${index}" placeholder="e.g. /24" required>
+                <input type="text" name="interface_ip_${index}" placeholder="e.g. 192.168.1.1 255.255.255.0" required>
                 <label>IPv6 Address (optional):</label>
                 <input type="text" name="interface_ipv6_${index}" placeholder="e.g. 2001:db8::1/64">
                 <label>Shutdown?</label>

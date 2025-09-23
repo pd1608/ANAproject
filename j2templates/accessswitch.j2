@@ -45,11 +45,7 @@ management api netconf
    transport ssh default
 !
 
-interface Management0
-{% if management_ip.ip is defined %}   ip address {{ management_ip.ip }}{% endif %}
-{% if management_ip.ipv6 is defined %}   ipv6 address {{ management_ip.ipv6 }}{% endif %}
-{% if management_ip.shutdown %}   shutdown{% endif %}
-!
+
 
 {% for intf in interfaces %}
 interface {{ intf.name }}

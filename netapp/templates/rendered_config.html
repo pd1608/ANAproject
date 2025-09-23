@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rendered Configuration</title>
+    <style>
+        body { font-family: monospace; background-color: #f4f6f9; padding: 20px; }
+        pre { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        a { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #0097e6; }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('index') }}">&larr; Back</a>
+    <h2>Rendered Running Configuration</h2>
+    <pre>{{ config }}</pre>
+</body>
+</html>

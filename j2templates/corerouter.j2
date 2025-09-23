@@ -1,0 +1,101 @@
+no aaa root
+!
+username admin privilege 15 role network-admin secret sha512 $6$2jvjF2.vpCvswK44$ICKL58GYIPox1To70jIxP.D3XGbOwBuky963MwyZ3e03oCw9ydamx6FdminkF3kyB6kSJm5n8aGS4Uxn2ZL5..
+!
+management api http-commands
+   no shutdown
+!
+no service interface inactive port-id allocation disabled
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname {{ hostname }}
+!
+! SNMP and SSH settings (same for all devices)
+snmp-server community public rw
+snmp-server host 10.0.100.1 version 2c pub
+snmp-server enable traps
+!
+spanning-tree mode mstp
+!
+system l1
+   unsupported speed action error
+   unsupported error-correction action error
+!
+management api gnmi
+   transport grpc default
+   !
+   transport grpc openmgmt
+      authorization requests
+   operation set persistence
+!
+management api netconf
+   transport ssh default
+!
+{% for intf in interfaces %}
+{% if intf.name != management_interface.name %}
+interface {{ intf.name }}
+   no switchport
+   ip address {{ intf.ip }}
+   {% if intf.ipv6 is defined %}ipv6 address {{ intf.ipv6 }}{% endif %}
+   {% if intf.access_group is defined %}ip access-group {{ intf.access_group }} in{% endif %}
+   ipv6 ospf 15 area 0.0.0.0
+!
+{% endif %}
+{% endfor %}
+
+! Management interface
+interface {{ management_interface.name }}
+   ip address {{ management_interface.ip }}
+   {% if management_interface.ipv6 is defined %}ipv6 address {{ management_interface.ipv6 }}{% endif %}
+!
+
+! Access List
+ip access-list ssh
+   10 deny tcp any any eq ssh
+   20 deny tcp any any eq telnet
+   30 permit ip any any
+!
+
+ip routing
+!
+ipv6 unicast-routing
+!
+ip route 0.0.0.0/0 {{ default_gateway }}
+ipv6 route ::/0 {{ default_gateway_v6 }}
+!
+router bgp 3
+   neighbor 198.51.100.2 remote-as 1
+   neighbor 2002:db8::1 remote-as 1
+   !
+   address-family ipv4
+      {% for intf in interfaces if intf.name != management_interface.name %}
+      network {{ intf.ip | ip_network }}
+      {% endfor %}
+   !
+   address-family ipv6
+      neighbor 2002:db8::1 activate
+      {% for intf in interfaces if intf.name != management_interface.name and intf.ipv6 is defined %}
+      network {{ intf.ipv6 | ip_network }}
+      {% endfor %}
+!
+router multicast
+   ipv4
+      software-forwarding kernel
+   !
+   ipv6
+      software-forwarding kernel
+!
+router ospf 10
+   redistribute bgp
+   {% for intf in interfaces if intf.name != management_interface.name %}
+   network {{ intf.ip }} area 0.0.0.0
+   {% endfor %}
+   max-lsa 12000
+!
+ipv6 router ospf 15
+   redistribute bgp
+!
+end

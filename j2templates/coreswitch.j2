@@ -1,0 +1,110 @@
+
+!
+no aaa root
+!
+! SSH login (same for all devices)
+username admin privilege 15 role network-admin secret sha512 $6$2jvjF2.vpCvswK44$ICKL58GYIPox1To70jIxP.D3XGbOwBuky963MwyZ3e03oCw9ydamx6FdminkF3kyB6kSJm5n8aGS4Uxn2ZL5..
+!
+management api http-commands
+   no shutdown
+!
+no service interface inactive port-id allocation disabled
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname {{ hostname }}
+!
+! SNMP settings (same for all devices)
+snmp-server community public rw
+snmp-server host 10.0.100.1 version 2c public
+snmp-server enable traps
+!
+spanning-tree mode mstp
+!
+system l1
+   unsupported speed action error
+   unsupported error-correction action error
+!
+management api gnmi
+   transport grpc default
+   !
+   transport grpc openmgmt
+      authorization requests
+   operation set persistence
+!
+management api netconf
+   transport ssh default
+!
+{% for intf in interfaces %}
+{% if intf.name != management_interface.name %}
+interface {{ intf.name }}
+   no switchport
+   ip address {{ intf.ip }}
+   {% if intf.ipv6 is defined %}ipv6 address {{ intf.ipv6 }}{% endif %}
+   {% if intf.access_group is defined %}ip access-group {{ intf.access_group }} in{% endif %}
+   ipv6 ospf 15 area 0.0.0.0
+!
+{% endif %}
+{% endfor %}
+
+! Management interface
+interface {{ management_interface.name }}
+   ip address {{ management_interface.ip }}
+   {% if management_interface.ipv6 is defined %}ipv6 address {{ management_interface.ipv6 }}{% endif %}
+!
+
+! Access List (same for all devices)
+ip access-list ssh
+   10 deny tcp any any eq ssh
+   20 deny tcp any any eq telnet
+   30 permit ip any any
+!
+
+ip routing
+!
+ipv6 unicast-routing
+!
+ip route 0.0.0.0/0 {{ default_gateway }}
+ipv6 route ::/0 {{ default_gateway_v6 }}
+!
+router bgp {{ bgp.asn }}
+{% for neighbor in bgp.neighbors %}
+   neighbor {{ neighbor.ip }} remote-as {{ neighbor.remote_as }}
+{% endfor %}
+!
+{% for af in bgp.address_families %}
+address-family {{ af.name }}
+{% if af.networks is defined %}
+{% for net in af.networks %}
+   network {{ net }}
+{% endfor %}
+{% endif %}
+{% if af.activate_neighbors is defined %}
+{% for n in af.activate_neighbors %}
+   neighbor {{ n }} activate
+{% endfor %}
+{% endif %}
+!
+{% endfor %}
+
+router multicast
+   ipv4
+      software-forwarding kernel
+   !
+   ipv6
+      software-forwarding kernel
+!
+router ospf 10
+{% for net in ospf.networks %}
+   network {{ net.network }} area {{ net.area }}
+{% endfor %}
+   max-lsa {{ ospf.max_lsa }}
+!
+ipv6 router ospf 15
+{% for item in ospf_v6.redistribute %}
+   redistribute {{ item }}
+{% endfor %}
+!
+end

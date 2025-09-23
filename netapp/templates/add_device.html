@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Device</title>
+    <style>
+        .section { display: none; margin-bottom: 15px; }
+        .sub-section { margin-left: 20px; margin-bottom: 10px; }
+    </style>
+    <script>
+        function addInterface() {
+            const container = document.getElementById('interfaces_container');
+            const index = container.children.length;
+            const html = `
+            <div class="sub-section">
+                <label>Interface Name:</label>
+                <input type="text" name="interface_name_${index}" placeholder="e.g. eth1" required>
+                <label>IP Address:</label>
+                <input type="text" name="interface_ip_${index}" placeholder="e.g. 192.168.1.1" required>
+                <label>Subnet Mask:</label>
+                <input type="text" name="interface_mask_${index}" placeholder="e.g. 255.255.255.0" required>
+                <label>IPv6 Address (optional):</label>
+                <input type="text" name="interface_ipv6_${index}" placeholder="e.g. 2001:db8::1/64">
+                <label>Shutdown?</label>
+                <input type="checkbox" name="interface_shutdown_${index}">
+                <br><br>
+            </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+    </script>
+</head>
+<body>
+    <h1>Add Device</h1>
+    <form method="POST" action="/add">
+        <label>Device Name:</label><br>
+        <input type="text" name="device_name" placeholder="e.g. R1" required><br><br>
+
+        <label>Hostname:</label><br>
+        <input type="text" name="hostname" placeholder="e.g. router1" required><br><br>
+
+        <label>Template:</label><br>
+        <select name="j2_template" required>
+            {% for value, label in templates %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+        </select><br><br>
+
+   
+        <h3>Interfaces</h3>
+        <div id="interfaces_container"></div>
+        <button type="button" onclick="addInterface()">+ Add Interface</button><br><br>
+
+        <input type="submit" value="Render Configuration">
+    </form>
+</body>
+</html>

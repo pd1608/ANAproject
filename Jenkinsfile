@@ -10,34 +10,12 @@ pipeline {
             }
         }
 
-        stage('Setup Python Environment') {
-            steps {
-                script {
-                    echo "Setting up Python virtual environment inside Jenkins workspace..."
-                    sh '''
-                    cd $WORKSPACE/pythonscripts
-
-                    # Create virtual environment if it doesn't exist
-                    if [ ! -d "venv" ]; then
-                        python3 -m venv venv
-                    fi
-
-                    # Activate venv and install dependencies
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                    '''
-                }
-            }
-        }
-
         stage('Ping Test') {
             steps {
                 script {
-                    echo "Running ping test for all devices in topology..."
+                    echo "Running ping_test.py directly..."
                     sh '''
                     cd $WORKSPACE/pythonscripts
-                    . venv/bin/activate
                     python3 ping_test.py > ping_results.txt
                     '''
                 }

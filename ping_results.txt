@@ -1,0 +1,14 @@
+===== DEVICE PING TEST (2025-10-13 18:25:44) =====
+
+r3 → 198.100.100.2: ✅ Success
+r3 → 2003:db8::1: ✅ Success
+r3 → 10.0.100.1: ✅ Success
+r4 → 198.100.100.2: ✅ Success
+r4 → 2003:db8::1: ✅ Success
+r4 → 10.0.100.1: ✅ Success
+r2 → 198.100.100.2: ✅ Success
+r2 → 2003:db8::1: ✅ Success
+r2 → 10.0.100.1: ✅ Success
+r1 → 198.100.100.2: ✅ Success
+r1 → 2003:db8::1: ✅ Success
+r1 → 10.0.100.1: ✅ Success

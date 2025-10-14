@@ -4,8 +4,10 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Pull the latest code from your GitHub repo
-                git branch: 'master', url: 'https://github.com/pd1608/ANAproject.git'
+                echo "Checking out code from GitHub via SSH..."
+                git branch: 'master', 
+                    url: 'git@github.com:pd1608/ANAproject.git', 
+                    credentialsId: 'jenkins-ssh-key'
             }
         }
 
@@ -15,12 +17,14 @@ pipeline {
                     echo "Setting up Python virtual environment..."
                     sh '''
                     cd /home/student/lab1/pythonscripts
+
                     # Create virtual environment if it doesn't exist
                     if [ ! -d "venv" ]; then
                         python3 -m venv venv
                     fi
+
                     # Activate venv and install dependencies
-                    source venv/bin/activate
+                    . venv/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
                     '''
@@ -34,7 +38,7 @@ pipeline {
                     echo "Running ping test for all devices in topology..."
                     sh '''
                     cd /home/student/lab1/pythonscripts
-                    source venv/bin/activate
+                    . venv/bin/activate
                     python3 ping_test.py > ping_results.txt
                     '''
                 }
@@ -45,8 +49,9 @@ pipeline {
             steps {
                 script {
                     echo "Displaying ping results:"
-                    sh 'cat /home/student/lab1/pythonscripts/ping_results.txt'
-                    // Optional: archive the results in Jenkins
+                    sh 'cat /home/student/pythonscripts/ping_results.txt'
+
+                    // Archive the results so you can download from Jenkins UI
                     archiveArtifacts artifacts: '/home/student/lab1/pythonscripts/ping_results.txt'
                 }
             }

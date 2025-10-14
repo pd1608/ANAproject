@@ -15,7 +15,7 @@ pipeline {
                 script {
                     echo "Running ping_test.py directly..."
                     sh '''
-                    cd $WORKSPACE/pythonscripts
+                    cd $WORKSPACE
                     python3 ping_test.py > ping_results.txt
                     '''
                 }
@@ -26,21 +26,17 @@ pipeline {
             steps {
                 script {
                     echo "Displaying ping results:"
-                    sh 'cat $WORKSPACE/pythonscripts/ping_results.txt'
+                    sh 'cat $WORKSPACE/ping_results.txt'
 
-                    // Archive the results so they are downloadable from Jenkins
-                    archiveArtifacts artifacts: '$WORKSPACE/pythonscripts/ping_results.txt'
+                    // Archive results so they are downloadable from Jenkins
+                    archiveArtifacts artifacts: '$WORKSPACE/ping_results.txt'
                 }
             }
         }
     }
 
     post {
-        success {
-            echo "✅ Ping test completed successfully!"
-        }
-        failure {
-            echo "❌ Ping test failed!"
-        }
+        success { echo "✅ Ping test completed successfully!" }
+        failure { echo "❌ Ping test failed!" }
     }
 }

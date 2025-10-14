@@ -13,9 +13,9 @@ pipeline {
         stage('Setup Python Environment') {
             steps {
                 script {
-                    echo "Setting up Python virtual environment..."
+                    echo "Setting up Python virtual environment inside Jenkins workspace..."
                     sh '''
-                    cd /home/student/lab1/pythonscripts
+                    cd $WORKSPACE/pythonscripts
 
                     # Create virtual environment if it doesn't exist
                     if [ ! -d "venv" ]; then
@@ -36,7 +36,7 @@ pipeline {
                 script {
                     echo "Running ping test for all devices in topology..."
                     sh '''
-                    cd /home/student/lab1/pythonscripts
+                    cd $WORKSPACE/pythonscripts
                     . venv/bin/activate
                     python3 ping_test.py > ping_results.txt
                     '''
@@ -48,8 +48,10 @@ pipeline {
             steps {
                 script {
                     echo "Displaying ping results:"
-                    sh 'cat /home/student/lab1/pythonscripts/ping_results.txt'
-                    archiveArtifacts artifacts: '/home/student/lab1/pythonscripts/ping_results.txt'
+                    sh 'cat $WORKSPACE/pythonscripts/ping_results.txt'
+
+                    // Archive the results so they are downloadable from Jenkins
+                    archiveArtifacts artifacts: '$WORKSPACE/pythonscripts/ping_results.txt'
                 }
             }
         }

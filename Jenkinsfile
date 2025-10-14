@@ -4,10 +4,9 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo "Checking out code from GitHub via SSH..."
-                git branch: 'master', 
-                    url: 'git@github.com:pd1608/ANAproject.git', 
-                    credentialsId: 'jenkins-ssh-key'
+                echo "Checking out code from GitHub..."
+                git branch: 'master',
+                    url: 'https://github.com/pd1608/ANAproject.git'
             }
         }
 
@@ -49,9 +48,7 @@ pipeline {
             steps {
                 script {
                     echo "Displaying ping results:"
-                    sh 'cat /home/student/pythonscripts/ping_results.txt'
-
-                    // Archive the results so you can download from Jenkins UI
+                    sh 'cat /home/student/lab1/pythonscripts/ping_results.txt'
                     archiveArtifacts artifacts: '/home/student/lab1/pythonscripts/ping_results.txt'
                 }
             }

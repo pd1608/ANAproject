@@ -1,0 +1,24 @@
+Last login: Mon Oct 13 03:04:33 2025 from 10.0.100.1
+
+
+s4>
+s4>terminal width 511
+Width set to 511 columns.
+s4>terminal length 0
+Pagination disabled.
+s4>
+s4>
+s4>enable
+s4#
+s4#configure terminal
+s4(config)#
+s4(config)#username admin secret 8xEH2VK19xA7S7ih
+s4(config)#
+s4(config)#end
+s4#
+s4#
+s4#
+s4#copy running-config startup-config
+Copy completed successfully.
+s4#
+s4#exit

@@ -1,0 +1,24 @@
+Last login: Mon Oct 13 03:04:21 2025 from 10.0.100.1
+
+
+s3>
+s3>terminal width 511
+Width set to 511 columns.
+s3>terminal length 0
+Pagination disabled.
+s3>
+s3>
+s3>enable
+s3#
+s3#configure terminal
+s3(config)#
+s3(config)#username admin secret FAOh3nyz0LDAcowU
+s3(config)#
+s3(config)#end
+s3#
+s3#
+s3#
+s3#copy running-config startup-config
+Copy completed successfully.
+s3#
+s3#exit

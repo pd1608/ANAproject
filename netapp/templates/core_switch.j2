@@ -1,4 +1,3 @@
-
 !
 no aaa root
 !
@@ -37,8 +36,8 @@ management api gnmi
 management api netconf
    transport ssh default
 !
+
 {% for intf in interfaces %}
-{% if intf.name != management_interface.name %}
 interface {{ intf.name }}
    no switchport
    ip address {{ intf.ip }}
@@ -46,14 +45,7 @@ interface {{ intf.name }}
    {% if intf.access_group is defined %}ip access-group {{ intf.access_group }} in{% endif %}
    ipv6 ospf 15 area 0.0.0.0
 !
-{% endif %}
 {% endfor %}
-
-! Management interface
-!interface {{ management_interface.name }}
-!   ip address {{ management_interface.ip }}
-!   {% if management_interface.ipv6 is defined %}ipv6 address {{ management_interface.ipv6 }}{% endif %}
-!
 
 ! Access List (same for all devices)
 ip access-list ssh
@@ -69,25 +61,6 @@ ipv6 unicast-routing
 ip route 0.0.0.0/0 {{ default_gateway }}
 ipv6 route ::/0 {{ default_gateway_v6 }}
 !
-router bgp {{ bgp.asn }}
-{% for neighbor in bgp.neighbors %}
-   neighbor {{ neighbor.ip }} remote-as {{ neighbor.remote_as }}
-{% endfor %}
-!
-{% for af in bgp.address_families %}
-address-family {{ af.name }}
-{% if af.networks is defined %}
-{% for net in af.networks %}
-   network {{ net }}
-{% endfor %}
-{% endif %}
-{% if af.activate_neighbors is defined %}
-{% for n in af.activate_neighbors %}
-   neighbor {{ n }} activate
-{% endfor %}
-{% endif %}
-!
-{% endfor %}
 
 router multicast
    ipv4
@@ -96,15 +69,16 @@ router multicast
    ipv6
       software-forwarding kernel
 !
-router ospf 10
-{% for net in ospf.networks %}
-   network {{ net.network }} area {{ net.area }}
+router ospf {{ ospf_process }}
+{% for intf in interfaces %}
+{% if intf.ip is defined %}
+   network {{ intf.ip.split('/')[0] }} {{ intf.ip.split('/')[1] }} area 0.0.0.0
+{% endif %}
 {% endfor %}
-   max-lsa {{ ospf.max_lsa }}
+   redistribute rip
+   max-lsa {{ ospf_max_lsa }}
 !
-ipv6 router ospf 15
-{% for item in ospf_v6.redistribute %}
-   redistribute {{ item }}
-{% endfor %}
+
+ipv6 router ospf {{ ospf_process }}
 !
 end

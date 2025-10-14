@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IPAM Full View</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Tahoma, sans-serif;
+            padding: 20px;
+            background-color: #f4f6f9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #1e90ff;
+            color: white;
+        }
+        tr:nth-child(even){background-color: #f2f2f2;}
+        tr:hover {background-color: #ddd;}
+        h2 {
+            color: #1e90ff;
+        }
+        a {
+            display: inline-block;
+            margin-top: 15px;
+            text-decoration: none;
+            color: white;
+            background-color: #1e90ff;
+            padding: 10px 20px;
+            border-radius: 6px;
+        }
+        a:hover {
+            background-color: #005bb5;
+        }
+    </style>
+</head>
+<body>
+    <h2>📊 IPAM Full Table</h2>
+    <table>
+        <thead>
+            <tr>
+                {% for col in ipam_data[0].keys() %}
+                    <th>{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in ipam_data %}
+                <tr>
+                    {% for col in row.keys() %}
+                        <td>{{ row[col] }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('index') }}">Back to Dashboard</a>
+</body>
+</html>

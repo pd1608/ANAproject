@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Config Diff - {{ hostname }}</title>
+    <style>
+        body { font-family: monospace; background-color: #f4f4f4; padding: 20px; }
+        pre { background-color: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .added { background-color: #d4f4dd; }
+        .removed { background-color: #f4d4d4; }
+    </style>
+</head>
+<body>
+    <h2>Config Diff for {{ hostname }}</h2>
+    <pre>
+{% for line in diff.splitlines() %}
+{% if line.startswith('+') and not line.startswith('+++') %}
+<span class="added">{{ line }}</span>
+{% elif line.startswith('-') and not line.startswith('---') %}
+<span class="removed">{{ line }}</span>
+{% else %}
+{{ line }}
+{% endif %}
+{% endfor %}
+    </pre>
+    <a href="{{ url_for('index') }}"><button>Back to Dashboard</button></a>
+</body>
+</html>

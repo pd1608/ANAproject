@@ -34,8 +34,8 @@ management api gnmi
 management api netconf
    transport ssh default
 !
+
 {% for intf in interfaces %}
-{% if intf.name != management_interface.name %}
 interface {{ intf.name }}
    no switchport
    ip address {{ intf.ip }}
@@ -43,10 +43,7 @@ interface {{ intf.name }}
    {% if intf.access_group is defined %}ip access-group {{ intf.access_group }} in{% endif %}
    ipv6 ospf 15 area 0.0.0.0
 !
-{% endif %}
 {% endfor %}
-
-
 
 ! Access List
 ip access-list ssh
@@ -67,14 +64,14 @@ router bgp 3
    neighbor 2002:db8::1 remote-as 1
    !
    address-family ipv4
-      {% for intf in interfaces if intf.name != management_interface.name %}
-      network {{ intf.ip | ip_network }}
+      {% for intf in interfaces %}
+      network {{ intf.ip }}
       {% endfor %}
    !
    address-family ipv6
       neighbor 2002:db8::1 activate
-      {% for intf in interfaces if intf.name != management_interface.name and intf.ipv6 is defined %}
-      network {{ intf.ipv6 | ip_network }}
+      {% for intf in interfaces if intf.ipv6 is defined %}
+      network {{ intf.ipv6 }}
       {% endfor %}
 !
 router multicast
@@ -86,7 +83,7 @@ router multicast
 !
 router ospf 10
    redistribute bgp
-   {% for intf in interfaces if intf.name != management_interface.name %}
+   {% for intf in interfaces %}
    network {{ intf.ip }} area 0.0.0.0
    {% endfor %}
    max-lsa 12000

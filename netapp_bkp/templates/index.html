@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Network Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #273c75;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 20px;
+            gap: 30px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            width: 500px;
+        }
+        h2 {
+            color: #192a56;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        input[type=text], select {
+            width: 95%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 6px;
+            border: 1px solid #dcdde1;
+        }
+        input[type=submit], button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            background-color: #44bd32;
+            color: white;
+            cursor: pointer;
+        }
+        button.remove-btn {
+            background-color: #e84118;
+            margin-left: 10px;
+        }
+        .section {
+            display: none;
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #dcdde1;
+            border-radius: 6px;
+            background-color: #f5f6fa;
+        }
+        .sub-section {
+            margin-top: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #dcdde1;
+        }
+        a {
+            color: #0097e6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .flash {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .success {
+            background-color: #44bd32;
+            color: white;
+        }
+        .error {
+            background-color: #e84118;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        Network Dashboard
+    </header>
+
+    <div class="container">
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Monitoring Device Card -->
+        <div class="card">
+            <h2>Device Monitoring</h2>
+            <p>Click the button below to monitor your devices:</p>
+            <a href="http://localhost:3000/d/e2f60aa7-1b5b-4d91-94c4-e3933ebf3d85/ana?orgId=1&from=now-5m&to=now&timezone=browser&var-query0=&editIndex=0&tab=queries" target="_blank">
+                <button>Open Monitoring</button>
+            </a>
+        </div>
+
+        <!-- Add Device Card -->
+        <div class="card">
+            <h2>Add Device</h2>
+            <form method="POST" action="/add">
+
+                <label>Device Name:</label>
+                <input type="text" name="device_name" placeholder="e.g. R1" required>
+
+                <label>Hostname:</label>
+                <input type="text" name="hostname" placeholder="e.g. router1" required>
+
+                <!-- Dummy Vendor Dropdown -->
+                <label>Vendor:</label>
+                <select name="vendor">
+                    <option value="">Select Vendor</option>
+                    <option value="cisco">Cisco</option>
+                    <option value="arista">Arista</option>
+                </select>
+
+                <label>Template:</label>
+                <select name="j2_template" id="j2_template" onchange="updateForm()" required>
+                    {% for value, label in templates %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <h3>Interfaces</h3>
+                <div id="interfaces_container"></div>
+                <button type="button" onclick="addInterface()">+ Add Interface</button>
+
+                <!-- Optional Sections -->
+                <div id="ospf_section" class="section">
+                    <label>OSPF Process:</label>
+                    <input type="text" name="ospf_process" placeholder="e.g. 1">
+                    <label>OSPF Max LSA:</label>
+                    <input type="text" name="ospf_max_lsa" placeholder="e.g. 12000">
+                </div>
+
+                <div id="rip_section" class="section">
+                    <h3>RIP Networks</h3>
+                    <div id="rip_container"></div>
+                    <button type="button" onclick="addRipNetwork()">+ Add RIP Network</button>
+                </div>
+
+                <div id="bgp_section" class="section">
+                    <label>BGP ASN:</label>
+                    <input type="text" name="bgp_asn" placeholder="e.g. 65001">
+                    <h3>BGP Neighbors</h3>
+                    <div id="bgp_container"></div>
+                    <button type="button" onclick="addBGPNeighbor()">+ Add BGP Neighbor</button>
+                </div>
+
+                <div id="gateway_section" class="section">
+                    <label>Default Gateway (IPv4):</label>
+                    <input type="text" name="default_gateway" placeholder="e.g. 192.168.1.254">
+                    <label>Default Gateway (IPv6):</label>
+                    <input type="text" name="default_gateway_v6" placeholder="e.g. 2001:db8::fffe">
+                </div>
+
+                <div id="vlans_section" class="section">
+                    <h3>VLANs</h3>
+                    <div class="sub-section">
+                        <label>VLAN ID:</label>
+                        <input type="text" name="vlan_id_0" placeholder="e.g. 10">
+                        <label>VLAN Name:</label>
+                        <input type="text" name="vlan_name_0" placeholder="e.g. Sales">
+                    </div>
+                </div>
+
+                <input type="submit" value="Render Configuration">
+            </form>
+        </div>
+
+        <!-- Create Golden Config Card -->
+        <div class="card">
+            <h2>Create Golden Config</h2>
+            <form method="POST" action="/golden_config">
+                <label>Select Device:</label>
+                <select name="device_name" required>
+                    {% for device in devices %}
+                        <option value="{{ device.hostname }}">{{ device.device_name }} ({{ device.hostname }})</option>
+                    {% endfor %}
+                </select>
+                <input type="submit" value="Create Golden Config">
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function updateForm() {
+            const template = document.getElementById('j2_template').value;
+            ['ospf_section', 'rip_section', 'bgp_section', 'gateway_section', 'vlans_section'].forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            if (template === 'access_router.j2' || template === 'access_switch.j2') {
+                document.getElementById('ospf_section').style.display = 'block';
+                document.getElementById('rip_section').style.display = 'block';
+                if(template === 'access_switch.j2') document.getElementById('vlans_section').style.display = 'block';
+            } else if (template === 'core_router.j2' || template === 'core_switch.j2') {
+                document.getElementById('ospf_section').style.display = 'block';
+                document.getElementById('bgp_section').style.display = 'block';
+                document.getElementById('gateway_section').style.display = 'block';
+            }
+        }
+
+        function addInterface() {
+            const container = document.getElementById('interfaces_container');
+            const index = container.children.length;
+            const html = `
+            <div class="sub-section" id="interface_${index}">
+                <label>Interface Name:</label>
+                <input type="text" name="interface_name_${index}" placeholder="e.g. eth1" required>
+                <label>IP Address:</label>
+                <input type="text" name="interface_ip_${index}" placeholder="e.g. 192.168.1.1 255.255.255.0" required>
+                <label>IPv6 Address (optional):</label>
+                <input type="text" name="interface_ipv6_${index}" placeholder="e.g. 2001:db8::1/64">
+                <label>Shutdown?</label>
+                <input type="checkbox" name="interface_shutdown_${index}">
+                <button type="button" class="remove-btn" onclick="removeInterface(${index})">Remove Interface</button>
+            </div>`;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        function removeInterface(index) {
+            const element = document.getElementById(`interface_${index}`);
+            if(element) element.remove();
+        }
+
+        function addRipNetwork() {
+            const container = document.getElementById('rip_container');
+            const html = `<div class="sub-section"><input type="text" name="rip_network" placeholder="e.g. 10.0.10.0/30"></div>`;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        function addBGPNeighbor() {
+            const container = document.getElementById('bgp_container');
+            const index = container.children.length;
+            const html = `
+            <div class="sub-section">
+                <label>Neighbor IP:</label>
+                <input type="text" name="bgp_neighbor_ip_${index}" placeholder="e.g. 192.168.2.2">
+                <label>Remote AS:</label>
+                <input type="text" name="bgp_neighbor_as_${index}" placeholder="e.g. 65002">
+            </div>`;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        window.onload = updateForm;
+    </script>
+</body>
+</html>

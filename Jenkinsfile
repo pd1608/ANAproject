@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Pull the latest code from your GitHub repo
-                git branch: 'main', url: 'https://github.com/pd1608/ANAproject.git'
+                git branch: 'master', url: 'https://github.com/pd1608/ANAproject.git'
             }
         }
 

@@ -15,10 +15,7 @@ pipeline {
                 script {
                     echo "Setting up virtual environment and installing dependencies..."
                     sh '''
-                    # Create a virtual environment named 'venv' in the workspace
                     python3 -m venv venv
-                    
-                    # Activate venv and install dependencies
                     . venv/bin/activate && pip install --upgrade pip
                     . venv/bin/activate && pip install netmiko pytest
                     '''
@@ -31,7 +28,6 @@ pipeline {
                 script {
                     echo "Running ping_test.py inside the virtual environment..."
                     sh '''
-                    cd $WORKSPACE
                     . venv/bin/activate
                     python3 ping_test.py
                     '''
@@ -42,45 +38,30 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 script {
-                    echo "Running pytest inside the virtual environment..."
+                    echo "Running pytest for safe unit tests..."
                     sh '''
-                    cd $WORKSPACE
                     . venv/bin/activate
-                    python3 -m pytest --junitxml=pytest_results.xml
+                    # Run only tests in 'tests/' directory (mocked tests)
+                    python3 -m pytest pythonscripts/tests --junitxml=pytest_results.xml --tb=short
                     '''
-                }
-            }
-            post {
-                always {
-                    echo "Archiving pytest results..."
-                    junit 'pytest_results.xml'
                 }
             }
         }
 
-        stage('Results') {
-            when {
-                expression { currentBuild.result == 'SUCCESS' }
-            }
+        stage('Archive Test Results') {
             steps {
-                script {
-                    def resultFilePath = '/home/student/lab1/pythonscripts/ping_results.txt'
-
-                    echo "Displaying ping results (if file exists at expected path)..."
-                    sh(script: "cat ${resultFilePath} || true", returnStatus: true)
-
-                    archiveArtifacts artifacts: resultFilePath, allowEmpty: true
-                }
+                echo "Archiving pytest results..."
+                junit 'pytest_results.xml'
             }
         }
     }
 
     post {
         success {
-            echo "✅ Ping test and unit tests completed successfully!"
+            echo "✅ Pipeline completed successfully!"
         }
         failure {
-            echo "❌ Build failed! Check console output for errors."
+            echo "❌ Pipeline failed! Check the console output for errors."
         }
     }
 }

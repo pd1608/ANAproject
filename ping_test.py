@@ -29,16 +29,15 @@ def load_devices(csv_file):
 def get_device_type(hostname):
     """Infer device type from hostname"""
     if hostname.startswith("r"):
-        return "cisco_ios"       # or arista_eos if needed
-    return "arista_eos"         # fallback type, though won't be tested
+        return "cisco_ios"
+    return "arista_eos"
 
-def test_ping_on_device(device):
+def run_ping_on_device(device):
     """SSH into device and run ping commands"""
     hostname = device["hostname"]
 
-    # Skip any device not starting with 'r'
+    # Skip devices not starting with 'r'
     if not hostname.lower().startswith("r"):
-        #print(f"⚠️ Skipping {hostname} as it does not start with 'r'")
         return []
 
     ip = device["ip"]
@@ -59,22 +58,17 @@ def test_ping_on_device(device):
     results = []
     try:
         conn = ConnectHandler(**device_params)
-        conn.find_prompt()  # Verify we got in
+        conn.find_prompt()  # Verify connection
 
         for target in PING_TARGETS:
             print(f"  🔸 Pinging {target} from {hostname} ...")
 
-            # EOS vs IOS ping command difference
             if ":" in target:
                 ping_cmd = f"ping ipv6 {target}" if device_type != "arista_eos" else f"ping ipv6 {target} repeat 3"
             else:
                 ping_cmd = f"ping {target}" if device_type != "arista_eos" else f"ping {target} repeat 3"
 
-            output = conn.send_command(
-                ping_cmd,
-                expect_string=None,
-                delay_factor=2
-            )
+            output = conn.send_command(ping_cmd, expect_string=None, delay_factor=2)
 
             success = any(kw in output.lower() for kw in ["success rate", "bytes from", "100 percent", "0% packet loss"])
             status = "✅ Success" if success else "❌ Failed"
@@ -87,7 +81,6 @@ def test_ping_on_device(device):
 
     return results
 
-
 def main():
     devices = load_devices(CSV_FILE)
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -97,13 +90,12 @@ def main():
         log.write(f"===== DEVICE PING TEST ({timestamp}) =====\n\n")
 
         for device in devices:
-            results = test_ping_on_device(device)
+            results = run_ping_on_device(device)
             for line in results:
                 print(line)
                 log.write(line + "\n")
 
     print(f"\n✅ Results saved to {LOG_FILE}\n")
-
 
 if __name__ == "__main__":
     main()

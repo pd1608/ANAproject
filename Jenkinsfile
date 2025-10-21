@@ -14,9 +14,9 @@ pipeline {
                 script {
                     echo "Setting up virtual environment and installing dependencies..."
                     sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate && pip install --upgrade pip
-                    . venv/bin/activate && pip install netmiko pytest
+                        python3 -m venv /home/student/lab1/pythonscripts/venv
+                        /home/student/lab1/pythonscripts/venv/bin/python3 -m pip install --upgrade pip
+                        /home/student/lab1/pythonscripts/venv/bin/python3 -m pip install netmiko pytest
                     '''
                 }
             }
@@ -27,8 +27,7 @@ pipeline {
                 script {
                     echo "Running ping_test.py inside the virtual environment..."
                     sh '''
-                    . venv/bin/activate
-                    python3 /home/student/lab1/pythonscripts/ping_test.py
+                        /home/student/lab1/pythonscripts/venv/bin/python3 /home/student/lab1/pythonscripts/ping_test.py
                     '''
                 }
             }
@@ -39,10 +38,7 @@ pipeline {
                 script {
                     echo "Running pytest for safe unit tests..."
                     sh '''
-                    . venv/bin/activate
-                    python3 -m pytest /home/student/lab1/pythonscripts/tests \
-                        --junitxml=/home/student/lab1/pythonscripts/pytest_results.xml \
-                        --tb=short
+                        /home/student/lab1/pythonscripts/venv/bin/python3 -m pytest /home/student/lab1/pythonscripts/tests --junitxml=/home/student/lab1/pythonscripts/pytest_results.xml --tb=short
                     '''
                 }
             }

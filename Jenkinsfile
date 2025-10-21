@@ -1,7 +1,12 @@
 pipeline {
     agent any
     stages {
-        // ... (Checkout stage remains unchanged)
+        stage('Checkout') {
+            steps {
+                echo "Checking out code from GitHub..."
+                git branch: 'master', url: 'https://github.com/pd1608/ANAproject.git'
+            }
+        }
 
         stage('Install Dependencies') {
             steps {
@@ -12,7 +17,6 @@ pipeline {
                         python3 -m venv venv
                         
                         # 2. Use the explicit path to the venv's python binary to run pip as a module.
-                        # This guarantees installation happens inside the new venv/lib/pythonX.Y/site-packages
                         ./venv/bin/python3 -m pip install netmiko pytest pytest-cov
                     '''
                 }
@@ -24,9 +28,13 @@ pipeline {
                 script {
                     echo "Running unit tests with pytest and generating coverage report..."
                     sh '''
-                        # Execute pytest using the explicit python binary from the venv.
-                        # Using 'cd $WORKSPACE' is redundant since the Jenkins agent starts there, but keeping it doesn't hurt.
+                        # 1. Change to the workspace root
                         cd $WORKSPACE
+                        
+                        # 2. Add the current workspace directory to the Python path so it can find the 'pythonscripts' package
+                        export PYTHONPATH=$PYTHONPATH:$WORKSPACE
+                        
+                        # 3. Execute pytest using the explicit python binary from the venv.
                         ./venv/bin/python3 -m pytest --cov=. --cov-report=xml
                     '''
                     // Optional: cobertura autoUpdate: false, coberturaReportFile: 'coverage.xml'
@@ -34,16 +42,34 @@ pipeline {
             }
         }
 
-        // ... (The rest of the pipeline remains unchanged)
-        
         stage('Ping Test') {
             steps {
                 script {
                     echo "Running ping_test.py inside the virtual environment..."
                     sh '''
-                        # Execute the script using the explicit python binary from the venv
+                        # 1. Change to the workspace root
+                        cd $WORKSPACE
+                        
+                        # 2. Execute the script using the explicit python binary from the venv
                         ./venv/bin/python3 ping_test.py
                     '''
+                }
+            }
+        }
+        
+        stage('Results') {
+            when {
+                expression { currentBuild.result == 'SUCCESS' }
+            }
+            steps {
+                script {
+                    // NOTE: The Python script hardcodes the log file path.
+                    def resultFilePath = '/home/student/lab1/pythonscripts/ping_results.txt'
+                    echo "Displaying ping results (if file exists at expected path)..."
+                    // Use '|| true' to prevent the pipeline from failing if the file doesn't exist yet
+                    sh(script: "cat ${resultFilePath} || true", returnStatus: true)
+                    // Archive the results
+                    archiveArtifacts artifacts: resultFilePath, allowEmpty: true
                 }
             }
         }

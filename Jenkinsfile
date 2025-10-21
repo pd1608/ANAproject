@@ -38,18 +38,19 @@ pipeline {
             }
         }
 
-        stage('Unit Tests') {
-            steps {
-                script {
-                    echo "Running pytest with coverage..."
-                    sh '''
-                    cd $WORKSPACE
-                    . venv/bin/activate
-                    pytest -v --cov=pythonscripts --cov-report=term-missing
-                    '''
-                }
+           stage('Unit Tests') {
+        steps {
+            script {
+                echo "Running pytest with coverage..."
+                sh '''
+                cd $WORKSPACE
+                . venv/bin/activate
+                export PYTHONPATH=$WORKSPACE
+                pytest -v --cov=pythonscripts --cov-report=term-missing
+                '''
             }
         }
+    }
 
         stage('Results') {
             when {

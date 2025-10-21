@@ -28,7 +28,7 @@ pipeline {
                     echo "Running ping_test.py inside the virtual environment..."
                     sh '''
                     . venv/bin/activate
-                    python3 /home/student/lab1/pythonscripts/ping_test.py
+                    python3 pythonscripts/ping_test.py
                     '''
                 }
             }
@@ -40,9 +40,8 @@ pipeline {
                     echo "Running pytest for safe unit tests..."
                     sh '''
                     . venv/bin/activate
-                    # Use absolute path for tests
-                    python3 -m pytest /home/student/lab1/pythonscripts/tests \
-                        --junitxml=/home/student/lab1/pythonscripts/pytest_results.xml \
+                    python3 -m pytest pythonscripts/tests \
+                        --junitxml=pythonscripts/pytest_results.xml \
                         --tb=short
                     '''
                 }
@@ -52,7 +51,7 @@ pipeline {
         stage('Archive Test Results') {
             steps {
                 echo "Archiving pytest results..."
-                junit '/home/student/lab1/pythonscripts/pytest_results.xml'
+                junit 'pythonscripts/pytest_results.xml'
             }
         }
     }

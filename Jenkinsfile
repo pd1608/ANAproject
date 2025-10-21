@@ -1,37 +1,38 @@
 pipeline {
     agent any
 
+    environment {
+        VENV_PATH = "venv"
+        PYTHON_SCRIPT_DIR = "/home/student/lab1/pythonscripts"
+    }
+
     stages {
-        stage('Checkout') {
+        stage('Checkout from GitHub') {
             steps {
                 echo "Checking out code from GitHub..."
-                git branch: 'master',
-                    url: 'https://github.com/pd1608/ANAproject.git'
+                checkout scm
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Setup Python Environment') {
             steps {
-                script {
-                    echo "Setting up virtual environment and installing dependencies..."
-                    sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate && pip install --upgrade pip
-                    . venv/bin/activate && pip install netmiko pytest pytest-cov
-                    '''
-                }
+                echo "Setting up Python virtual environment..."
+                sh '''
+                python3 -m venv ${VENV_PATH}
+                . ${VENV_PATH}/bin/activate
+                pip install --upgrade pip
+                pip install -r ${PYTHON_SCRIPT_DIR}/requirements.txt
+                '''
             }
         }
 
-        stage('Ping Test') {
+        stage('Code Quality Check (PEP8)') {
             steps {
-                script {
-                    echo "Running ping_test.py inside the virtual environment..."
-                    sh '''
-                    . venv/bin/activate
-                    python3 /home/student/lab1/pythonscripts/ping_test.py
-                    '''
-                }
+                echo "Running pylint for PEP8 compliance..."
+                sh '''
+                . ${VENV_PATH}/bin/activate
+                pylint ${PYTHON_SCRIPT_DIR} --exit-zero > pylint_report.txt
+                '''
             }
         }
 
@@ -41,7 +42,7 @@ pipeline {
                     echo "Running pytest with coverage reporting..."
                     sh '''
                     . venv/bin/activate
-                    python3 -m pytest \
+                    pytest \
                         /home/student/lab1/pythonscripts/tests \
                         --cov=/home/student/lab1/pythonscripts \
                         --cov-report=term-missing \
@@ -52,20 +53,25 @@ pipeline {
             }
         }
 
-        stage('Archive Test Results') {
+        stage('Archive Results') {
             steps {
-                echo "Archiving pytest results..."
+                echo "Archiving test and lint reports..."
+                archiveArtifacts artifacts: 'pylint_report.txt, /home/student/lab1/pythonscripts/pytest_results.xml', onlyIfSuccessful: true
                 junit '/home/student/lab1/pythonscripts/pytest_results.xml'
             }
         }
     }
 
     post {
+        always {
+            echo "Cleaning up workspace..."
+            cleanWs()
+        }
         success {
-            echo "✅ Pipeline completed successfully!"
+            echo "Build completed successfully!"
         }
         failure {
-            echo "❌ Pipeline failed! Check the console output for errors."
+            echo "Build failed! Please check test and lint reports for details."
         }
     }
 }

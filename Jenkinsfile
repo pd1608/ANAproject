@@ -15,9 +15,8 @@ pipeline {
                     echo "Setting up virtual environment and installing dependencies..."
                     sh '''
                     python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install netmiko pytest pytest-cov
+                    . venv/bin/activate && pip install --upgrade pip
+                    . venv/bin/activate && pip install netmiko pytest
                     '''
                 }
             }
@@ -35,16 +34,14 @@ pipeline {
             }
         }
 
-        stage('Run Unit Tests with Coverage') {
+        stage('Run Unit Tests') {
             steps {
                 script {
-                    echo "Running pytest with coverage reporting..."
+                    echo "Running pytest for safe unit tests..."
                     sh '''
                     . venv/bin/activate
-                    pytest \
-                        /home/student/lab1/pythonscripts/tests \
-                        --cov=/home/student/lab1/pythonscripts \
-                        --cov-report=term-missing \
+                    # Use absolute path for tests
+                    python3 -m pytest /home/student/lab1/pythonscripts/tests \
                         --junitxml=/home/student/lab1/pythonscripts/pytest_results.xml \
                         --tb=short
                     '''

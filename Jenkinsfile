@@ -14,12 +14,12 @@ pipeline {
                 script {
                     echo "Setting up virtual environment and installing dependencies..."
                     sh '''
-                        # Create a virtual environment named 'venv'
-                        python3 -m venv venv
-                        # Activate the virtual environment and install dependencies
-                        . venv/bin/activate
-                        pip install --upgrade pip
-                        pip install netmiko pytest pytest-cov
+                    # Create a virtual environment named 'venv'
+                    python3 -m venv venv
+                    # Activate the virtual environment and install dependencies
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install netmiko pytest pytest-cov
                     '''
                 }
             }
@@ -30,9 +30,9 @@ pipeline {
                 script {
                     echo "Running ping_test.py inside the virtual environment..."
                     sh '''
-                        cd $WORKSPACE
-                        . venv/bin/activate
-                        python3 ping_test.py
+                    cd $WORKSPACE
+                    . venv/bin/activate
+                    python3 ping_test.py
                     '''
                 }
             }
@@ -43,10 +43,11 @@ pipeline {
                 script {
                     echo "Running pytest with coverage..."
                     sh '''
-                        . venv/bin/activate
-                        export PYTHONPATH=/home/student/lab1/pythonscripts
-                        cd /home/student/lab1
-                        pytest -v --cov=/home/student/lab1/pythonscripts --cov-report=term-missing
+                    . venv/bin/activate
+                    export PYTHONPATH=$WORKSPACE/pythonscripts
+                    export COVERAGE_FILE=$WORKSPACE/.coverage
+                    cd $WORKSPACE
+                    pytest -v --cov=pythonscripts --cov-report=term-missing
                     '''
                 }
             }

@@ -35,14 +35,11 @@ pipeline {
                         # 2. Activate the virtual environment
                         . venv/bin/activate
                         
-                        # 3. Execute pytest and coverage.
-                        # Assuming your tests are in a 'tests' directory or follow a standard naming convention (e.g., test_*.py).
-                        # --cov=. tells pytest-cov to check coverage for the current directory's code.
-                        # --cov-report=xml generates a Cobertura XML report for Jenkins integration.
-                        pytest --cov=. --cov-report=xml
+                        # 3. Execute pytest as a module using the venv's python binary.
+                        # This ensures the venv's plugins (like pytest-cov) are loaded correctly.
+                        python3 -m pytest --cov=. --cov-report=xml
                     '''
-                    // Optional: Publish the Cobertura coverage report if you have the Cobertura plugin installed in Jenkins
-                    // This allows Jenkins to track coverage trends.
+                    // Optional: You can still uncomment the below if the Cobertura plugin is installed
                     // cobertura autoUpdate: false, coberturaReportFile: 'coverage.xml'
                 }
             }

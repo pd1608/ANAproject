@@ -28,16 +28,13 @@ pipeline {
                 script {
                     echo "Running unit tests with pytest and generating coverage report..."
                     sh '''
-                        # 1. Change to the workspace root
-                        cd $WORKSPACE
-                        
-                        # 2. Add the current workspace directory to the Python path so it can find the 'pythonscripts' package
+                        # 1. Add the current workspace directory to the Python path 
+                        # to enable 'from pythonscripts import...' imports.
                         export PYTHONPATH=$PYTHONPATH:$WORKSPACE
                         
-                        # 3. Execute pytest using the explicit python binary from the venv.
-                        ./venv/bin/python3 -m pytest --cov=. --cov-report=xml
+                        # 2. Execute the user's preferred pytest command using the explicit venv Python interpreter.
+                        ./venv/bin/python3 -m pytest -v --cov=pythonscripts --cov-report=term-missing
                     '''
-                    // Optional: cobertura autoUpdate: false, coberturaReportFile: 'coverage.xml'
                 }
             }
         }

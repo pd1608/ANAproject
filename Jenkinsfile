@@ -40,25 +40,15 @@ pipeline {
 
         stage('Unit Tests') {
             steps {
-                script {
-                    echo "Running pytest with coverage..."
-                    sh '''
-                    # Activate virtual environment
+                sh '''
                     . venv/bin/activate
-        
-                    # Ensure Python can find your pythonscripts module
-                    export PYTHONPATH=$WORKSPACE
-                    export COVERAGE_FILE=$WORKSPACE/.coverage
-        
-                    # Run pytest from the workspace root
-                    cd $WORKSPACE
-        
-                    # Run tests in the tests/ folder, enable verbose, and collect coverage
-                    pytest -v --rootdir=$WORKSPACE --cov=pythonscripts --cov-report=term-missing tests/
-                    '''
-                }
+                    # Set Python path to repo root so pytest can find 'pythonscripts'
+                    export PYTHONPATH=$PWD
+                    pytest -v --rootdir=$PWD --cov=pythonscripts --cov-report=term-missing tests/
+                '''
             }
         }
+    }
 
 
         stage('Results') {

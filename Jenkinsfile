@@ -44,7 +44,7 @@ pipeline {
                     echo "Running pytest with coverage..."
                     sh '''
                     . venv/bin/activate
-                    export PYTHONPATH=$WORKSPACE/pythonscripts
+                    export PYTHONPATH=$WORKSPACE
                     export COVERAGE_FILE=$WORKSPACE/.coverage
                     cd $WORKSPACE
                     pytest -v --cov=pythonscripts --cov-report=term-missing
@@ -52,6 +52,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Results') {
             when {

@@ -38,14 +38,20 @@ pipeline {
             }
         }
 
-        stage('Unit Tests') {
+        stage('Unit Tests & Coverage') {
             steps {
-                sh '''
-                    . venv/bin/activate
-                    # Set Python path to repo root so pytest can find 'pythonscripts'
-                    export PYTHONPATH=$PWD
-                    pytest -v --rootdir=$PWD --cov=pythonscripts --cov-report=term-missing tests/
-                '''
+                script {
+                    echo "Running unit tests with simplified pytest command..."
+                    sh '''
+                        # CRITICAL STEP: Add the current Jenkins workspace to the Python path.
+                        # This allows the 'tests/' files to successfully import 'pythonscripts'.
+                        export PYTHONPATH=$PYTHONPATH:$WORKSPACE
+                        
+                        # Use the user's simplified command, executed via the venv Python binary.
+                        # This ensures the correct 'pytest' and packages are used.
+                        ./venv/bin/python3 -m pytest -v --cov=pythonscripts --cov-report=term-missing
+                    '''
+                }
             }
         }
 

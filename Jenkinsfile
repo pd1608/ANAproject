@@ -12,12 +12,14 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 script {
-                    echo "Setting up virtual environment and installing netmiko..."
+                    echo "Setting up virtual environment and installing dependencies..."
                     sh '''
-                    # 1. Create a virtual environment named 'venv' in the workspace
+                    # Create a virtual environment named 'venv'
                     python3 -m venv venv
-                    # 2. Activate the virtual environment and install netmiko
-                    . venv/bin/activate && pip install netmiko
+                    # Activate the virtual environment and install dependencies
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install netmiko pytest pytest-cov
                     '''
                 }
             }
@@ -28,11 +30,8 @@ pipeline {
                 script {
                     echo "Running ping_test.py inside the virtual environment..."
                     sh '''
-                    # 1. Change to the workspace root
                     cd $WORKSPACE
-                    # 2. Activate the virtual environment
                     . venv/bin/activate
-                    # 3. Run the ping test script
                     python3 ping_test.py
                     '''
                 }
@@ -44,8 +43,8 @@ pipeline {
                 script {
                     echo "Running pytest with coverage..."
                     sh '''
-                    # Run pytest with coverage exactly like your local command
-                    cd /home/student/lab1
+                    cd $WORKSPACE
+                    . venv/bin/activate
                     pytest -v --cov=pythonscripts --cov-report=term-missing
                     '''
                 }
@@ -54,15 +53,14 @@ pipeline {
 
         stage('Results') {
             when {
-                expression { currentBuild.result == 'SUCCESS' }
+                expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
             }
             steps {
                 script {
-                    // NOTE: The Python script hardcodes the log file path
-                    def resultFilePath = '/home/student/lab1/pythonscripts/ping_results.txt'
-                    echo "Displaying ping results (if file exists at expected path)..."
-                    sh(script: "cat ${resultFilePath} || true", returnStatus: true)
-                    archiveArtifacts artifacts: resultFilePath, allowEmpty: true
+                    def pingResults = "$WORKSPACE/pythonscripts/ping_results.txt"
+                    echo "Displaying ping results (if file exists)..."
+                    sh(script: "cat ${pingResults} || true", returnStatus: true)
+                    archiveArtifacts artifacts: pingResults, allowEmptyArchive: true
                 }
             }
         }

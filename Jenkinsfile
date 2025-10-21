@@ -14,11 +14,10 @@ pipeline {
                 script {
                     echo "Setting up virtual environment and installing dependencies..."
                     sh '''
-                        # 1. Create a virtual environment named 'venv' in the workspace
                         python3 -m venv venv
-                        # 2. Activate the virtual environment and install required packages
-                        . venv/bin/activate && pip install --upgrade pip
-                        . venv/bin/activate && pip install netmiko pytest
+                        # Upgrade pip and install required packages
+                        /var/lib/jenkins/workspace/Containerlab/venv/bin/pip install --upgrade pip
+                        /var/lib/jenkins/workspace/Containerlab/venv/bin/pip install netmiko pytest
                     '''
                 }
             }
@@ -29,12 +28,7 @@ pipeline {
                 script {
                     echo "Running ping_test.py inside the virtual environment..."
                     sh '''
-                        # 1. Change to the workspace root
-                        cd $WORKSPACE
-                        # 2. Activate the virtual environment
-                        . venv/bin/activate
-                        # 3. Execute the ping test script
-                        python3 ping_test.py
+                        /var/lib/jenkins/workspace/Containerlab/venv/bin/python3 /home/student/lab1/pythonscripts/ping_test.py
                     '''
                 }
             }
@@ -45,32 +39,25 @@ pipeline {
                 script {
                     echo "Running pytest for unit tests..."
                     sh '''
-                        # Activate virtual environment
-                        . venv/bin/activate
-                        # Run pytest and generate junit XML results
-                        python3 -m pytest /home/student/lab1/pythonscripts/tests --junitxml=/home/student/lab1/pythonscripts/pytest_results.xml --tb=short
+                        /var/lib/jenkins/workspace/Containerlab/venv/bin/python3 -m pytest \
+                        /home/student/lab1/pythonscripts/tests \
+                        --junitxml=/home/student/lab1/pythonscripts/pytest_results.xml --tb=short
                     '''
                 }
             }
         }
 
         stage('Results') {
-            when {
-                expression { currentBuild.result == 'SUCCESS' }
-            }
             steps {
                 script {
-                    // Display ping results
-                    def pingResultFile = '/home/student/lab1/pythonscripts/ping_results.txt'
+                    def pingResults = '/home/student/lab1/pythonscripts/ping_results.txt'
+                    def pytestResults = '/home/student/lab1/pythonscripts/pytest_results.xml'
+
                     echo "Displaying ping results (if file exists)..."
-                    sh(script: "cat ${pingResultFile} || true", returnStatus: true)
+                    sh(script: "cat ${pingResults} || true", returnStatus: true)
 
-                    // Archive ping and pytest results
-                    archiveArtifacts artifacts: pingResultFile, allowEmpty: true
-                    archiveArtifacts artifacts: '/home/student/lab1/pythonscripts/pytest_results.xml', allowEmpty: true
-
-                    // Publish junit results for Jenkins test reporting
-                    junit '/home/student/lab1/pythonscripts/pytest_results.xml'
+                    echo "Archiving ping and pytest results..."
+                    archiveArtifacts artifacts: "${pingResults}, ${pytestResults}", allowEmpty: true
                 }
             }
         }

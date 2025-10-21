@@ -16,9 +16,9 @@ pipeline {
                         # 1. Create a virtual environment named 'venv' in the workspace
                         python3 -m venv venv
 
-                        # 2. Activate the virtual environment and install netmiko, pytest, and coverage
-                        # We use '&&' to ensure the install only runs if activation succeeds!
-                        . venv/bin/activate && pip install netmiko pytest pytest-cov
+                        # 2. Use the explicit path to the venv's pip to ensure installation
+                        # happens correctly inside the new venv/lib/pythonX.Y/site-packages
+                        ./venv/bin/pip install netmiko pytest pytest-cov
                     '''
                 }
             }
@@ -32,12 +32,10 @@ pipeline {
                         # 1. Change to the workspace root
                         cd $WORKSPACE
                         
-                        # 2. Activate the virtual environment
-                        . venv/bin/activate
-                        
-                        # 3. Execute pytest as a module using the venv's python binary.
-                        # This ensures the venv's plugins (like pytest-cov) are loaded correctly.
-                        python3 -m pytest --cov=. --cov-report=xml
+                        # 2. Execute pytest using the explicit python binary from the venv.
+                        # This guarantees the venv is used, and it should now find 'pytest' 
+                        # because it was installed correctly with the explicit pip path above.
+                        ./venv/bin/python3 -m pytest --cov=. --cov-report=xml
                     '''
                     // Optional: You can still uncomment the below if the Cobertura plugin is installed
                     // cobertura autoUpdate: false, coberturaReportFile: 'coverage.xml'
@@ -53,31 +51,23 @@ pipeline {
                         # 1. Change to the workspace root
                         cd $WORKSPACE
                         
-                        # 2. Activate the virtual environment using the universal '.' command
-                        . venv/bin/activate
-                        
-                        # 3. Execute the script using the python binary from the venv
-                        python3 ping_test.py
+                        # 2. Execute the script using the explicit python binary from the venv
+                        ./venv/bin/python3 ping_test.py
                     '''
                 }
             }
         }
-
+        
+        // ... (The rest of the pipeline remains the same)
         stage('Results') {
             when {
-                // Only run this stage if the previous stages (including tests) were successful
                 expression { currentBuild.result == 'SUCCESS' }
             }
             steps {
                 script {
-                    // NOTE: The Python script hardcodes the log file path.
                     def resultFilePath = '/home/student/lab1/pythonscripts/ping_results.txt'
                     echo "Displaying ping results (if file exists at expected path)..."
-                    
-                    // Use '|| true' to prevent the pipeline from failing if the file doesn't exist yet
                     sh(script: "cat ${resultFilePath} || true", returnStatus: true)
-                    
-                    // Archive the results
                     archiveArtifacts artifacts: resultFilePath, allowEmpty: true
                 }
             }

@@ -44,6 +44,8 @@
 </head>
 <body>
     <h2>📊 IPAM Full Table</h2>
+
+    {% if ipam_data %}
     <table>
         <thead>
             <tr>
@@ -62,6 +64,10 @@
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+        <p>No IPAM data found.</p>
+    {% endif %}
+
     <a href="{{ url_for('index') }}">Back to Dashboard</a>
 </body>
 </html>

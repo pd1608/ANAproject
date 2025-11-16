@@ -1,10 +1,9 @@
-
 no aaa root
 !
-username admin privilege 15 role network-admin secret sha512 $6$tbuySpdK1tK1WSEK$/CsmpyrLCyLDV.Z5a/eICd3rScqlOKsynp1yvP0wM7EPkcnArfNCHL3mnLBUyKvN3dahjDjgO5cnkcCEVk7Yf1
+username admin privilege 15 role network-admin secret 5 $1$7bL2tCq4$f0sVl4D1Dqj3w8mF3T2/F.  # Setting password to 'admin' (MD5 hash)
 !
 management api http-commands
-   no shutdown
+    no shutdown
 !
 no service interface inactive port-id allocation disabled
 !
@@ -21,29 +20,30 @@ snmp-server enable traps
 spanning-tree mode mstp
 !
 system l1
-   unsupported speed action error
-   unsupported error-correction action error
+    unsupported speed action error
+    unsupported error-correction action error
 !
 management api gnmi
-   transport grpc default
+    transport grpc default
       authorization requests
-   !
-   transport grpc openmgmt
+    !
+    transport grpc openmgmt
       authorization requests
-   operation set persistence
+    operation set persistence
 !
 management api netconf
-   transport ssh default
+    transport ssh default
 !
 
 
 {% for intf in interfaces %}
 interface {{ intf.name }}
-{% if intf.shutdown %}   shutdown{% endif %}
-{% if intf.switchport is defined %}   switchport{% if not intf.switchport %} no switchport{% endif %}{% endif %}
-{% if intf.ip is defined %}   ip address {{ intf.ip }}{% endif %}
-{% if intf.ipv6 is defined %}   ipv6 address {{ intf.ipv6 }}{% endif %}
-{% if intf.ospf_area is defined %}   ipv6 ospf {{ ospf_process }} area {{ intf.ospf_area }}{% endif %}
+    no switchport
+{% if intf.shutdown %}    shutdown{% endif %}
+{% if intf.switchport is defined %}    switchport{% if not intf.switchport %} no switchport{% endif %}{% endif %}
+{% if intf.ip is defined %}    ip address {{ intf.ip }}{% endif %}
+{% if intf.ipv6 is defined %}    ipv6 address {{ intf.ipv6 }}{% endif %}
+{% if intf.ospf_area is defined %}    ipv6 ospf {{ ospf_process }} area {{ intf.ospf_area }}{% endif %}
 !
 {% endfor %}
 
@@ -60,28 +60,28 @@ ipv6 route {{ route.network }} {{ route.next_hop }}
 {% endfor %}
 !
 router multicast
-   ipv4
+    ipv4
       software-forwarding kernel
-   !
-   ipv6
+    !
+    ipv6
       software-forwarding kernel
 !
 router ospf {{ ospf_process }}
 {% for intf in interfaces %}
 {% if intf.ip is defined %}
-   network {{ intf.ip.split('/')[0] }}/{{ intf.ip.split('/')[1] }} area 0.0.0.0
+    network {{ intf.ip.split('/')[0] }} {{ intf.ip.split('/')[1] }} area 0.0.0.0
 {% endif %}
 {% endfor %}
-   redistribute rip
-   max-lsa {{ ospf_max_lsa }}
+    redistribute rip
+    max-lsa {{ ospf_max_lsa }}
 !
 ipv6 router ospf {{ ospf_process }}
 !
 router rip
 {% for net in rip_networks %}
-   network {{ net }}
+    network {{ net }}
 {% endfor %}
-   redistribute ospf
-   no shutdown
+    redistribute ospf
+    no shutdown
 !
 end

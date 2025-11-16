@@ -31,6 +31,22 @@ devices = [
     {"device_name": "Switch4", "hostname": "10.0.100.5", "username": "admin", "password": "pranav"}
 ]
 
+def get_device_credentials(host_or_ip):
+    try:
+        with open('rotated_passwords.csv', mode='r') as file:
+            csv_reader = csv.DictReader(file)
+            for row in csv_reader:
+                if row['hostname'] == host_or_ip or row['ip'] == host_or_ip:
+                    return {
+                        'username': row['username'],
+                        'password': row['password']
+                    }
+    except Exception as e:
+        print(f"CSV read error: {e}")
+    
+    return None
+
+
 GOLDEN_CONFIG_FOLDER = "golden_configs"
 os.makedirs(GOLDEN_CONFIG_FOLDER, exist_ok=True)
 
@@ -121,6 +137,38 @@ def create_golden_config():
         flash(f"Failed to create golden config: {str(e)}", "error")
 
     return redirect(url_for('index'))
+
+@app.route('/show_running_config', methods=['GET', 'POST'])
+def show_running_config():
+    if request.method == 'POST':
+        device_target = request.form.get('device_target')
+
+        creds = get_device_credentials(device_target)
+        if not creds:
+            flash("Device not found in rotated_passwords.csv", "error")
+            return redirect(url_for('show_running_config'))
+
+        try:
+            device = {
+                "device_type": "cisco_ios",   # change if Arista -> "arista_eos"
+                "host": device_target,
+                "username": creds['username'],
+                "password": creds['password'],
+            }
+
+            ssh_conn = ConnectHandler(**device)
+            output = ssh_conn.send_command("show running-config")
+            ssh_conn.disconnect()
+
+            return render_template('show_running_config.html', 
+                                   device=device_target, 
+                                   output=output)
+
+        except Exception as e:
+            flash(f"Error retrieving config: {e}", "error")
+            return redirect(url_for('show_running_config'))
+
+    return render_template('show_running_config_form.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

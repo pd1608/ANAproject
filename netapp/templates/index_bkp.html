@@ -181,11 +181,11 @@
 
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="flash {{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
     {% endwith %}
 
     <!-- Monitoring Device Card -->
@@ -201,7 +201,7 @@
 
     <!-- Add Device Card -->
     <div class="card">
-        <h2>➕ Add Device (ZTP Ready)</h2>
+        <h2>➕ Add Device</h2>
         <form method="POST" action="/add">
 
             <label>Device Name:</label>
@@ -209,14 +209,6 @@
 
             <label>Hostname:</label>
             <input type="text" name="hostname" placeholder="e.g. router1" required>
-
-            <!-- --- NEW FIELDS FOR ZTP/DHCP CONFIGURATION --- -->
-            <label>MAC Address (required for ZTP):</label>
-            <input type="text" name="mac_address" placeholder="e.g. 00:1A:2B:3C:4D:5E" required>
-
-            <label>Management IP (required for ZTP):</label>
-            <input type="text" name="management_ip" placeholder="e.g. 10.0.100.2" required>
-            <!-- --------------------------------------------- -->
 
             <label>Vendor:</label>
             <select name="vendor">
@@ -244,7 +236,7 @@
             </div>
 
             <div id="rip_section" class="section">
-                <h3>RIP Networks </h3>
+                <h3>RIP Networks</h3>
                 <div id="rip_container"></div>
                 <button type="button" onclick="addRipNetwork()">+ Add RIP Network</button>
             </div>
@@ -266,11 +258,9 @@
                 </div>
             </div>
 
-            <input type="submit" value="Render Configuration & Start ZTP">
+            <input type="submit" value="Render Configuration">
         </form>
     </div>
-
-    
 
     <!-- Golden Config Card -->
     <div class="card">
@@ -293,7 +283,7 @@
     </div>
     <!-- Health Check Card -->
     <div class="card">
-        <h2>🩺 Device Health Check </h2>
+        <h2>🩺 Device Health Check</h2>
         <form method="POST" action="/health_check">
             <label>Enter Hostname:</label>
             <input type="text" name="hostname" placeholder="e.g. R1 or 100.64.5.2" required>
@@ -301,22 +291,11 @@
         </form>
     </div>
 
-    <!-- IPAM Viewer Card -->
+    <!-- Add this card or button wherever you want in the dashboard -->
     <div class="card">
         <h2>🌐 View IPAM CSV</h2>
         <form action="/ipam_view" method="GET">
             <input type="submit" value="Show Full IPAM Table">
-        </form>
-    </div>
-
-    <!-- Show Running Config Card -->
-    <div class="card">
-        <h2>📜 Show Running Configuration</h2>
-        <form method="POST" action="/show_running_config">
-            <label>Enter Device IP / Hostname:</label>
-            <input type="text" name="device_ip" placeholder="e.g. 10.0.100.3 or r1" required>
-
-            <input type="submit" value="Fetch Running Config">
         </form>
     </div>
 
@@ -336,7 +315,10 @@
             if (template === 'access_switch.j2') {
                 document.getElementById('vlans_section').style.display = 'block';
             }
-        } else if (template === 'core_router.j2' || template === 'core_switch.j2') {
+        } else if (template === 'core_router.j2') {
+            document.getElementById('ospf_section').style.display = 'block';
+            document.getElementById('gateway_section').style.display = 'block';
+        } else if (template === 'core_switch.j2') {
             document.getElementById('ospf_section').style.display = 'block';
             document.getElementById('gateway_section').style.display = 'block';
         }
@@ -345,7 +327,6 @@
     function addInterface() {
         const container = document.getElementById('interfaces_container');
         const index = container.children.length;
-        // Note: The mask field is assumed to be handled by the backend by splitting the IP input.
         const html = `
         <div class="sub-section" id="interface_${index}">
             <label>Interface Name:</label>

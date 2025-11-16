@@ -8,13 +8,15 @@ import sys
 import csv
 from flask import send_file
 import difflib
+import time
+import requests # New import for Jenkins integration
 
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'  # Needed for flash messages
+app.secret_key = 'supersecretkey' # Needed for flash messages
 
 # Path to your Jinja2 templates
-TEMPLATE_DIR = 'templates/'  # Put your .j2 files here
+TEMPLATE_DIR = 'templates/' # Put your .j2 files here
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
 
 # Dummy list of templates to populate dropdown
@@ -25,70 +27,18 @@ templates = [
     ('core_switch.j2', 'Core Switch')
 ]
 
-
-@app.route('/')
-def index():
-    return render_template('index.html', templates=templates, devices=devices)
-
-@app.route('/add', methods=['POST'])
-def add_device():
-    try:
-        # Gather form data
-        form = request.form.to_dict()
-        
-        # Collect interfaces dynamically
-        interfaces = []
-        index = 0
-        while f'interface_name_{index}' in form:
-            iface = {
-                'name': form.get(f'interface_name_{index}'),
-                'ip': form.get(f'interface_ip_{index}'),
-                'mask': form.get(f'interface_mask_{index}'),
-                'ipv6': form.get(f'interface_ipv6_{index}'),
-                'shutdown': f'interface_shutdown_{index}' in form
-            }
-            interfaces.append(iface)
-            index += 1
-
-        # Prepare variables for Jinja2 template
-        template_vars = {
-            'device_name': form.get('device_name'),
-            'hostname': form.get('hostname'),
-            'vendor': form.get('vendor'),
-            'interfaces': interfaces,
-            'ospf_process': form.get('ospf_process'),
-            'ospf_max_lsa': form.get('ospf_max_lsa'),
-            'rip_networks': request.form.getlist('rip_network'),
-            'bgp_asn': form.get('bgp_asn'),
-            'bgp_neighbors': [
-                {'ip': form.get(f'bgp_neighbor_ip_{i}'), 'asn': form.get(f'bgp_neighbor_as_{i}')}
-                for i in range(len([k for k in form.keys() if k.startswith('bgp_neighbor_ip_')]))
-            ],
-            'default_gateway': form.get('default_gateway'),
-            'default_gateway_v6': form.get('default_gateway_v6'),
-            'vlans': [
-                {'id': form.get('vlan_id_0'), 'name': form.get('vlan_name_0')}
-            ] if form.get('vlan_id_0') else []
-        }
-
-        # Load the selected template
-        template_name = form.get('j2_template')
-        template = env.get_template(template_name)
-
-        # Render the configuration
-        rendered_config = template.render(template_vars)
-
-        # Show the rendered config on a new page
-        return render_template('rendered_config.html', config=rendered_config)
-
-    except Exception as e:
-        flash(f"Error rendering configuration: {e}", "error")
-        return redirect(url_for('index'))
-
-
-
+# --- Global Configurations ---
 ROTATED_PASSWORD_FILE = "/home/student/lab1/rotated_passwords.csv"
 GOLDEN_CONFIG_FOLDER = "/home/student/lab1/pythonscripts/golden_configs/"
+IPAM_CSV = "/home/student/lab1/pythonscripts/dynamic_ipam.csv" # Path to your IPAM CSV
+
+# Jenkins Configuration (ADDED/MODIFIED)
+JENKINS_USER = "admin"
+JENKINS_TOKEN = "11078f29dad7d537dbe9be9cf51f68e962"
+# CORRECTED: Must use buildWithParameters for parameterized jobs
+JENKINS_JOB_URL = "http://127.0.0.1:8080/job/Add_device_ANA/buildWithParameters"
+JENKINS_TRIGGER_TOKEN = "Add_device"
+
 
 def load_devices_from_csv():
     """Load devices from CSV using column positions (0=IP, 1=Hostname, 2=Username, 3=Password)"""
@@ -96,7 +46,7 @@ def load_devices_from_csv():
     try:
         with open(ROTATED_PASSWORD_FILE, "r") as f:
             reader = csv.reader(f)
-            next(reader)  # skip header
+            next(reader) # skip header
             for row in reader:
                 # strip spaces just in case
                 ip = row[0].strip()
@@ -118,7 +68,153 @@ def load_devices_from_csv():
 # Load devices once at startup
 devices = load_devices_from_csv()
 
-GOLDEN_CONFIG_FOLDER = "/home/student/lab1/pythonscripts/netapp/golden_configs"
+
+@app.route('/')
+def index():
+    return render_template('index.html', templates=templates, devices=devices)
+
+@app.route('/add', methods=['POST'])
+def add_device():
+    global devices # MUST declare global to update the module-level variable
+    try:
+        form = request.form.to_dict()
+
+        # --- Step 0: Collect interfaces dynamically ---
+        interfaces = []
+        index = 0
+        while f'interface_name_{index}' in form:
+            iface = {
+                'name': form.get(f'interface_name_{index}'),
+                'ip': form.get(f'interface_ip_{index}'),
+                'mask': form.get(f'interface_mask_{index}'),
+                'ipv6': form.get(f'interface_ipv6_{index}'),
+                'shutdown': f'interface_shutdown_{index}' in form
+            }
+            interfaces.append(iface)
+            index += 1
+
+        # --- Step 1: Prepare variables for Jinja2 ---
+        template_vars = {
+            'device_name': form.get('device_name'),
+            'hostname': form.get('hostname'),
+            'vendor': form.get('vendor'),
+            'interfaces': interfaces,
+            'ospf_process': form.get('ospf_process'),
+            'ospf_max_lsa': form.get('ospf_max_lsa'),
+            'rip_networks': request.form.getlist('rip_network'),
+            'bgp_asn': form.get('bgp_asn'),
+            'bgp_neighbors': [
+                {'ip': form.get(f'bgp_neighbor_ip_{i}'), 'asn': form.get(f'bgp_neighbor_as_{i}')}
+                for i in range(len([k for k in form.keys() if k.startswith('bgp_neighbor_ip_')]))
+            ],
+            'default_gateway': form.get('default_gateway'),
+            'default_gateway_v6': form.get('default_gateway_v6'),
+            'vlans': [
+                {'id': form.get('vlan_id_0'), 'name': form.get('vlan_name_0')}
+            ] if form.get('vlan_id_0') else []
+        }
+
+        # --- Step 2: Render Jinja2 config ---
+        template_name = form.get('j2_template')
+        template = env.get_template(template_name)
+        rendered_config = template.render(template_vars)
+
+        # --- Step 3: ZTP Automation (DHCP/Ping) ---
+        management_ip = form.get('management_ip')
+        mac_address = form.get('mac_address')
+        
+        dhcp_server_ip = "10.0.100.6"
+        dhcp_device = next((d for d in devices if d["device_ip"] == dhcp_server_ip), None)
+        if not dhcp_device:
+            flash(f"DHCP server {dhcp_server_ip} not found in CSV", "error")
+            return render_template('rendered_config.html', config=rendered_config)
+
+        # 3a: Connect to DHCP server and create reservation
+        driver = get_network_driver("eos")
+        optional_args = {"transport": "ssh"}
+        with driver(
+            hostname=dhcp_device["device_ip"],
+            username=dhcp_device["username"],
+            password=dhcp_device["password"],
+            optional_args=optional_args
+        ) as dhcp_conn:
+            dhcp_cmds = [
+                "configure terminal",
+                "dhcp server",
+                "   subnet 10.0.100.0/24",
+                "      reservations",
+                f"         mac-address {mac_address}",
+                f"            ipv4-address {management_ip}",
+                "end",
+                "write memory"
+            ]
+            dhcp_conn.load_merge_candidate(config=dhcp_cmds)
+            dhcp_conn.commit_config()
+
+        flash(f"✅ DHCP reservation created for {management_ip} ({mac_address})", "success")
+
+        # 3b: Wait and ping device
+        time.sleep(10)
+        ping_result = subprocess.run(
+            ["ping", "-c", "3", management_ip],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        if "0% packet loss" not in ping_result.stdout:
+            flash(f"⚠ Device {management_ip} not reachable via ping. ZTP halted.", "error")
+            return render_template('rendered_config.html', config=rendered_config)
+
+        flash(f"✅ Device {management_ip} is reachable via ping", "success")
+
+        # --- Step 3c: Update rotated_passwords.csv (IMPROVED) ---
+        try:
+            with open(ROTATED_PASSWORD_FILE, "a", newline="") as f:
+                writer = csv.writer(f)
+                # Write the new device entry with default 'admin' credentials
+                writer.writerow([management_ip, template_vars['hostname'], "admin", "admin"])
+            
+            # Reload global devices list from file to reflect the change
+            devices = load_devices_from_csv()
+            flash(f"✅ Added {management_ip} to rotated passwords file and reloaded device list", "success")
+        except Exception as e:
+            flash(f"❌ Failed to update rotated passwords CSV: {e}", "error")
+
+
+        # --- Step 4: Trigger Jenkins Pipeline (FIXED) ---
+
+        # Prepare parameters for the Jenkins job, including the token
+        params = {
+            "token": JENKINS_TRIGGER_TOKEN, # The Jenkins remote build token
+            "DEVICE_IP": management_ip,
+            "HOSTNAME": template_vars['hostname'],
+            "TEMPLATE": template_name
+        }
+
+        try:
+            response = requests.post(
+                JENKINS_JOB_URL, # Uses /buildWithParameters
+                auth=(JENKINS_USER, JENKINS_TOKEN),
+                params=params
+            )
+            
+            # 200/201 indicates a successful trigger
+            if response.status_code in [200, 201]: 
+                flash(f"✅ Jenkins Pipeline triggered successfully for {management_ip}", "success")
+            else:
+                flash(f"❌ Failed to trigger Jenkins Pipeline: HTTP {response.status_code}. Check URL, Token, and API Key.", "error")
+        except Exception as e:
+            flash(f"❌ Error triggering Jenkins Pipeline: {e}", "error")
+
+        return render_template('rendered_config.html', config=rendered_config)
+
+    except Exception as e:
+        flash(f"Error in add_device process: {e}", "error")
+        return render_template('rendered_config.html', config=rendered_config)
+
+
+# GOLDEN_CONFIG_FOLDER is already defined globally
+GOLDEN_CONFIG_FOLDER = "/home/student/lab1/pythonscripts/netapp/golden_configs" # NOTE: Duplicates definition above, kept for consistency
 
 @app.route("/golden_config", methods=["POST"])
 def create_golden_config():
@@ -162,6 +258,8 @@ def create_golden_config():
         flash(f"Failed to create golden config: {str(e)}", "error")
         return redirect(url_for("index"))
 
+
+
 @app.route("/config_diff", methods=["POST"])
 def config_diff():
     import difflib
@@ -193,7 +291,7 @@ def config_diff():
         return redirect(url_for("index"))
 
     try:
-        driver = get_network_driver("eos")  # SSH connection
+        driver = get_network_driver("eos") # SSH connection
         optional_args = {"transport": "ssh"}
         with driver(
             hostname=device["device_ip"],
@@ -238,7 +336,7 @@ def health_check():
     output = result.stdout + "\n" + result.stderr
     return render_template("health_output.html", hostname=hostname, output=output)
 
-IPAM_CSV = "/home/student/lab1/dynamic_ipam.csv"  # Path to your IPAM CSV
+# IPAM_CSV is already defined globally
 
 @app.route("/ipam_view", methods=["GET"])
 def ipam_view():
@@ -257,6 +355,52 @@ def ipam_view():
         return redirect(url_for("index"))
 
     return render_template("ipam_full.html", ipam_data=ipam_data)
+
+@app.route("/show_running_config", methods=["POST"])
+def show_running_config():
+    import csv
+    from netmiko import ConnectHandler
+
+    device_ip = request.form.get("device_ip")
+
+    # Read credentials from CSV
+    username = None
+    password = None
+    with open("/home/student/lab1/rotated_passwords.csv", "r") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            if row.get("Device") == device_ip or row.get("Hostname").lower() == device_ip.lower():
+                username = row.get("Username")
+                password = row.get("New_Password")
+                break
+
+    if not username or not password:
+        return render_template("running_config.html",
+                               device_ip=device_ip,
+                               output=f"❌ No credentials found in rotated_passwords.csv for {device_ip}")
+
+    # SSH and fetch running config
+    try:
+        device = {
+            "device_type": "arista_eos",  # adjust as needed, e.g., "arista_eos"
+            "ip": device_ip,
+            "username": username,
+            "password": password,
+        }
+
+        net_connect = ConnectHandler(**device)
+        net_connect.enable()
+        output = net_connect.send_command("show running-config")
+        net_connect.disconnect()
+
+        return render_template("running_config.html",
+                               device_ip=device_ip,
+                               output=output)
+
+    except Exception as e:
+        return render_template("running_config.html",
+                               device_ip=device_ip,
+                               output=f"❌ SSH error: {str(e)}")
 
 
 

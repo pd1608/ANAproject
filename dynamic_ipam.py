@@ -6,7 +6,7 @@ from netmiko import ConnectHandler
 PASSWORD_FILE = "/home/student/lab1/rotated_passwords.csv"
 
 # Output CSV file for IPAM data
-OUTPUT_FILE = "dynamic_ipam.csv"
+OUTPUT_FILE = "/home/student/lab1/pythonscripts/dynamic_ipam.csv"
 
 
 def read_device_passwords():
